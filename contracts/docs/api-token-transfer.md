@@ -131,6 +131,32 @@ Return value:
 
 ---
 
+### admin
+
+Signature:
+
+```rust
+pub fn admin(env: Env) -> Address
+```
+
+What it does:
+
+- Returns the admin address stored at `initialize`, so deploy tooling can confirm who controls the contract.
+
+Authorization:
+
+- No `require_auth()` call is performed.
+
+Panics / failure conditions:
+
+- Panics with `"not initialized"` if `initialize` has not been called.
+
+Return value:
+
+- Returns the admin as an `Address`.
+
+---
+
 ### set_token_contract
 
 Signature:

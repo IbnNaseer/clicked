@@ -471,3 +471,60 @@ fn execute_withdraw_non_member_panics() {
     // alice is not a treasury member
     client.execute_withdraw(&alice, &id);
 }
+
+// ── admin getter (#719) ───────────────────────────────────────────────────────
+
+#[test]
+fn test_admin_returns_initialized_admin() {
+    let env = Env::default();
+    let (client, proposals_admin, ..) = setup(&env);
+    assert_eq!(client.admin(), proposals_admin);
+}
+
+#[test]
+#[should_panic(expected = "not initialized")]
+fn test_admin_before_initialize_panics() {
+    let env = Env::default();
+    let proposals_id = env.register(ProposalsContract, ());
+    let client = ProposalsContractClient::new(&env, &proposals_id);
+    client.admin();
+}
+
+// ── description length limit (#721) ───────────────────────────────────────────
+
+fn create_with_description_len(env: &Env, len: usize) -> u64 {
+    let bytes = [b'a'; MAX_DESCRIPTION_LEN as usize + 1];
+    let description = String::from_bytes(env, &bytes[..len]);
+    let (client, _admin, alice, bob, _carol, treasury, _ta, _tm, token_id) = setup(env);
+    let now = env.ledger().timestamp();
+    client.create_proposal(
+        &alice,
+        &description,
+        &(now + 100),
+        &treasury.address,
+        &token_id,
+        &bob,
+        &10,
+    )
+}
+
+#[test]
+#[should_panic(expected = "description is empty")]
+fn test_create_proposal_empty_description_panics() {
+    let env = Env::default();
+    create_with_description_len(&env, 0);
+}
+
+#[test]
+fn test_create_proposal_description_at_limit_succeeds() {
+    let env = Env::default();
+    let id = create_with_description_len(&env, MAX_DESCRIPTION_LEN as usize);
+    assert_eq!(id, 0);
+}
+
+#[test]
+#[should_panic(expected = "description too long")]
+fn test_create_proposal_description_over_limit_panics() {
+    let env = Env::default();
+    create_with_description_len(&env, MAX_DESCRIPTION_LEN as usize + 1);
+}

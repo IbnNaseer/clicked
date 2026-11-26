@@ -20,6 +20,7 @@ exact panic message catalog across all three contracts, see
 - [Setup & configuration](#setup--configuration)
   - [`initialize`](#initialize)
   - [`get_threshold`](#get_threshold)
+  - [`admin`](#admin)
 - [Membership](#membership)
   - [`add_member`](#add_member)
   - [`remove_member`](#remove_member)
@@ -189,6 +190,28 @@ pub fn get_threshold(env: Env) -> u32
 
 This is the only accessor that reliably detects an uninitialized contract — `is_member` and
 `get_members` both return harmless defaults (`false` / empty vector) instead of panicking.
+
+---
+
+### `admin`
+
+Returns the admin address set at `initialize`.
+
+**Full signature:**
+
+```rust
+pub fn admin(env: Env) -> Address
+```
+
+**Return value:** `Address` — the value stored at `DataKey::Admin`.
+
+**Authorization requirements:** none (read-only).
+
+**Panics:**
+
+| Condition | Message |
+|---|---|
+| Contract not initialized | `"not initialized"` |
 
 ---
 

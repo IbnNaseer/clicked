@@ -12,6 +12,9 @@ target/
 .DS_Store
 .turbo/
 
+# pnpm workspace: only pnpm-lock.yaml is committed (#723).
+package-lock.json
+
 # Local-disk object store for dev/test (#330) — never committed.
 apps/backend/.local-storage/
 
