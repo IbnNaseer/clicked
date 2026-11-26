@@ -119,7 +119,7 @@ pub fn create_proposal(
 
 - `env: Env`: The Soroban environment context.
 - `proposer: Address`: Address creating the proposal.
-- `description: String`: Text description of the proposal.
+- `description: String`: Text description of the proposal. Must be non-empty and at most `MAX_DESCRIPTION_LEN` (512) bytes, because proposals live in instance storage, which is loaded on every call to the contract.
 - `expires_at: u64`: Ledger timestamp (in Unix seconds) when voting closes.
 - `treasury: Address`: Target `group_treasury` contract address for funding withdrawal.
 - `token: Address`: Stellar asset/token contract address to withdraw.
@@ -144,11 +144,13 @@ pub fn create_proposal(
 
 - Panics with `"expires_at must be in the future"` if `expires_at <= env.ledger().timestamp()`.
 - Panics with `"amount must be positive"` if `amount <= 0`.
+- Panics with `"description is empty"` if `description.len() == 0`.
+- Panics with `"description too long"` if `description.len() > MAX_DESCRIPTION_LEN` (512 bytes).
 
 #### Complexity Design
 
 - **Time Complexity**: $\mathcal{O}(1)$ instance storage read/write and event publish.
-- **Space Complexity**: $\mathcal{O}(L)$ where $L$ is the byte length of `description`.
+- **Space Complexity**: $\mathcal{O}(L)$ where $L$ is the byte length of `description` (bounded by `MAX_DESCRIPTION_LEN`).
 
 ---
 
@@ -379,6 +381,30 @@ pub fn get_proposal(env: Env, proposal_id: u64) -> Proposal
 
 - **Time Complexity**: $\mathcal{O}(1)$ instance storage retrieval.
 - **Space Complexity**: $\mathcal{O}(1)$.
+
+---
+
+### 9. `admin`
+
+Read-only accessor returning the administrator set at `initialize`.
+
+#### Full Signature
+
+```rust
+pub fn admin(env: Env) -> Address
+```
+
+#### Return Value
+
+- `Address`: The value stored at `DataKey::Admin`.
+
+#### Authorization Requirements
+
+- None (read-only query).
+
+#### Panics & Error Conditions
+
+- Panics with `"not initialized"` if `initialize` has not been called.
 
 ---
 

@@ -49,6 +49,14 @@ impl GroupTreasuryContract {
         env.storage().instance().set(&DataKey::Members, &members);
     }
 
+    /// Returns the admin address set at `initialize`.
+    pub fn admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized")
+    }
+
     /// Returns the configured approval threshold.
     pub fn get_threshold(env: Env) -> u32 {
         env.storage()

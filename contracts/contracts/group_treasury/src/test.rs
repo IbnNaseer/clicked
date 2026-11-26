@@ -847,3 +847,22 @@ fn test_propose_withdraw_increments_proposal_id() {
     assert_eq!(id0, 0);
     assert_eq!(id1, 1);
 }
+
+// ── admin getter (#719) ───────────────────────────────────────────────────────
+
+#[test]
+fn test_admin_returns_initialized_admin() {
+    let env = Env::default();
+    let (contract_id, _token_id, admin, _member) = setup(&env);
+    let client = GroupTreasuryContractClient::new(&env, &contract_id);
+    assert_eq!(client.admin(), admin);
+}
+
+#[test]
+#[should_panic(expected = "not initialized")]
+fn test_admin_before_initialize_panics() {
+    let env = Env::default();
+    let contract_id = env.register(GroupTreasuryContract, ());
+    let client = GroupTreasuryContractClient::new(&env, &contract_id);
+    client.admin();
+}

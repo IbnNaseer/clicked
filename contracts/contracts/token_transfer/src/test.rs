@@ -223,3 +223,26 @@ fn test_upgrade_non_admin_panics() {
     let wasm_hash = soroban_sdk::BytesN::from_array(&env, &[0xcd; 32]);
     client.upgrade(&wasm_hash);
 }
+
+// ── admin getter (#719) ───────────────────────────────────────────────────────
+
+#[test]
+fn test_admin_returns_initialized_admin() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let token_id = env.register(mock_token::MockToken, ());
+    let contract_id = env.register(TokenTransferContract, ());
+    let client = TokenTransferContractClient::new(&env, &contract_id);
+    client.initialize(&admin, &token_id);
+    assert_eq!(client.admin(), admin);
+}
+
+#[test]
+#[should_panic(expected = "not initialized")]
+fn test_admin_before_initialize_panics() {
+    let env = Env::default();
+    let contract_id = env.register(TokenTransferContract, ());
+    let client = TokenTransferContractClient::new(&env, &contract_id);
+    client.admin();
+}

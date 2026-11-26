@@ -1,0 +1,66 @@
+# Dependabot version updates (#724).
+# One entry per ecosystem in the repo. All PRs target `dev` (PRs to `main` are
+# closed automatically) and minor/patch bumps are grouped per ecosystem to keep
+# the PR volume low. Major bumps still arrive as individual PRs.
+version: 2
+updates:
+  # pnpm workspace (root package.json + apps/backend + apps/web via pnpm-lock.yaml)
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    labels:
+      - dx
+      - frontend
+      - backend
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # AI agent (uv project; Dependabot's pip ecosystem reads pyproject.toml + uv.lock)
+  - package-ecosystem: pip
+    directory: /apps/ai_agent
+    target-branch: dev
+    schedule:
+      interval: weekly
+    labels:
+      - dx
+      - ai
+    groups:
+      pip-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Soroban contracts workspace
+  - package-ecosystem: cargo
+    directory: /contracts
+    target-branch: dev
+    schedule:
+      interval: weekly
+    labels:
+      - dx
+      - contracts
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Workflow actions under .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    labels:
+      - dx
+      - ci
+    groups:
+      github-actions-minor-patch:
+        update-types:
+          - minor
+          - patch

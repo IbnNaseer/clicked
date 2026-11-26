@@ -344,6 +344,8 @@ Unlike the other two contracts, this `initialize` **does** call `admin.require_a
 | `proposer` did not authorize | Authorization | host auth failure |
 | `expires_at <= now` | Validation | `expires_at must be in the future` |
 | `amount <= 0` | Validation | `amount must be positive` |
+| `description` is empty | Validation | `description is empty` |
+| `description.len() > MAX_DESCRIPTION_LEN` (512 bytes) | Validation | `description too long` |
 
 `expires_at` is a **unix timestamp in seconds**, compared against `env.ledger().timestamp()`. Passing a duration rather than an absolute timestamp is the classic mistake here and fails immediately.
 

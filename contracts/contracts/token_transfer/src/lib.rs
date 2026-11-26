@@ -75,6 +75,14 @@ impl TokenTransferContract {
         TokenClient::new(&env, &token_id).balance(&address)
     }
 
+    /// Returns the admin address set at `initialize`.
+    pub fn admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized")
+    }
+
     /// Returns the configured token contract address.
     pub fn token_contract(env: Env) -> Address {
         env.storage()

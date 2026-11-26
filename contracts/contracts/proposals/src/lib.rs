@@ -23,6 +23,11 @@ mod treasury_interface;
 
 use soroban_sdk::{contract, contractimpl, symbol_short, Address, Env, String, Symbol};
 
+/// Maximum `description` length accepted by `create_proposal`, in bytes.
+/// Proposals live in instance storage, which is loaded on every call, so an
+/// unbounded description would make every later call more expensive.
+pub const MAX_DESCRIPTION_LEN: u32 = 512;
+
 pub use storage::{
     DataKey, Proposal, ProposalCreatedEvent, ProposalExecutedEvent, ProposalExpiredEvent,
     ProposalFinalizedEvent, ProposalStatus, VoteCastEvent,
@@ -49,6 +54,14 @@ impl ProposalsContract {
             .set(&DataKey::NextProposalId, &0u64);
     }
 
+    /// Returns the admin address set at `initialize`.
+    pub fn admin(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized")
+    }
+
     /// Create a new proposal that expires at `expires_at` (unix seconds).
     /// Returns the assigned proposal id.
     pub fn create_proposal(
@@ -68,6 +81,12 @@ impl ProposalsContract {
         }
         if amount <= 0 {
             panic!("amount must be positive");
+        }
+        if description.is_empty() {
+            panic!("description is empty");
+        }
+        if description.len() > MAX_DESCRIPTION_LEN {
+            panic!("description too long");
         }
 
         let id: u64 = env
