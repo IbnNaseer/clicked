@@ -9,7 +9,7 @@
 # Prerequisites:
 #   - stellar CLI installed  (https://developers.stellar.org/docs/tools/stellar-cli)
 #   - DEPLOYER_SECRET env var set (Stellar secret key of the deployer/admin account)
-#   - THRESHOLD env var set (required approvals, an integer from 1 to 4294967295)
+#   - Optional THRESHOLD env var (required approvals, defaults to 1, max 4294967295)
 #
 # Usage:
 #   DEPLOYER_SECRET=S... THRESHOLD=2 ./scripts/deploy_group_treasury.sh
@@ -18,6 +18,7 @@
 set -euo pipefail
 
 NETWORK="${NETWORK:-testnet}"
+THRESHOLD="${THRESHOLD-1}"
 WASM_PATH="target/wasm32-unknown-unknown/release/group_treasury.wasm"
 
 if [[ "$NETWORK" == "mainnet" || "$NETWORK" == "public" ]] && [[ "${CONFIRM_MAINNET:-}" != "yes" ]]; then
@@ -30,7 +31,7 @@ if [[ -z "${DEPLOYER_SECRET:-}" ]]; then
   exit 1
 fi
 
-if [[ ! "${THRESHOLD:-}" =~ ^[1-9][0-9]{0,9}$ ]] || (( THRESHOLD > 4294967295 )); then
+if [[ ! "$THRESHOLD" =~ ^[1-9][0-9]{0,9}$ ]] || (( THRESHOLD > 4294967295 )); then
   echo "Error: THRESHOLD must be an integer from 1 to 4294967295" >&2
   exit 1
 fi

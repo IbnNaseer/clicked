@@ -40,11 +40,9 @@ for threshold in '' 0 -1 1.5 abc 01 4294967296 999999999999999999999; do
 done
 
 : > "$LOG"
-if env -u THRESHOLD DEPLOYER_SECRET=mock-secret NETWORK=testnet \
-  bash "$SCRIPT_DIR/deploy_group_treasury.sh" > /dev/null 2>&1; then
-  echo 'Unexpected success without THRESHOLD' >&2
-  exit 1
-fi
-test ! -s "$LOG"
+output=$(env -u THRESHOLD DEPLOYER_SECRET=mock-secret NETWORK=testnet \
+  bash "$SCRIPT_DIR/deploy_group_treasury.sh")
+grep -Fq -- '-- initialize --admin mock-admin --threshold 1' "$LOG"
+grep -Fq -- 'Threshold   : 1' <<< "$output"
 
-echo 'Deployment argument checks passed (3 valid, 10 invalid/missing thresholds).'
+echo 'Deployment argument checks passed (explicit, invalid, and default thresholds).'
