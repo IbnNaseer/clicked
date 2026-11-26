@@ -5,8 +5,9 @@ which settings are not configurable at all.
 
 The service reads `OPENAI_API_KEY` per request and captures `OPENAI_CHAT_MODEL`
 and `OPENAI_EMBEDDING_MODEL` once at startup. Model changes require a process
-restart. The Weaviate connection and direct-execution bind host and port remain
-hardcoded in [`apps/ai_agent/main.py`](../main.py).
+restart. The Weaviate host and ports are read from the environment each time a
+connection is opened. The direct-execution bind host and port remain hardcoded
+in [`apps/ai_agent/main.py`](../main.py).
 
 ---
 
@@ -17,6 +18,9 @@ hardcoded in [`apps/ai_agent/main.py`](../main.py).
 | `OPENAI_API_KEY` | Yes\*    | _none_  | Per request, inside `_openai_client()` — not at import and not at boot | The process still starts and `/health` still returns 200; every OpenAI-backed endpoint returns 500. See [§3](#3-startup-and-missing-api-key-behaviour). |
 | `OPENAI_CHAT_MODEL` | No | `gpt-4o-mini` | Module import at startup | Uses the default for all three chat-completion endpoints. |
 | `OPENAI_EMBEDDING_MODEL` | No | `text-embedding-3-small` | Module import at startup | Uses the default for indexing and search. |
+| `WEAVIATE_HOST` | No | `localhost` | Per request, inside `_weaviate_client()` | Connects to Weaviate on the loopback host. |
+| `WEAVIATE_HTTP_PORT` | No | `8080` | Per request, inside `_weaviate_client()` | Uses the default Weaviate HTTP port. |
+| `WEAVIATE_GRPC_PORT` | No | `50051` | Per request, inside `_weaviate_client()` | Uses the default Weaviate gRPC port. |
 
 \* Required for the service to do anything useful. It is _not_ required for the
 process to start, and that distinction is the single most important thing in this
@@ -44,7 +48,7 @@ Worth stating explicitly, because their absence is easy to mistake for a bug:
 | Variable                                           | Status                                                                                                                                          |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `OPENAI_MODEL` | Not read. Use `OPENAI_CHAT_MODEL` and `OPENAI_EMBEDDING_MODEL` instead. |
-| `WEAVIATE_URL` / `WEAVIATE_HOST` / `WEAVIATE_PORT` | Not read. The connection is `weaviate.connect_to_local()` — see [§4](#4-weaviate-connection).                                                   |
+| `WEAVIATE_URL` / `WEAVIATE_PORT` | Not read. Use `WEAVIATE_HOST`, `WEAVIATE_HTTP_PORT` and `WEAVIATE_GRPC_PORT` — see [§4](#4-weaviate-connection). |
 | `WEAVIATE_API_KEY`                                 | Not read. The client connects unauthenticated.                                                                                                  |
 | `HOST` / `PORT`                                    | Not read. See [§2](#2-hardcoded-settings).                                                                                                      |
 | `OPENAI_BASE_URL`                                  | Not read. `OpenAI(api_key=...)` is constructed with no base URL override, so the SDK's own environment handling is the only way to redirect it. |
@@ -160,14 +164,19 @@ starts cleanly and fails per-request with **500**
 ### How it connects
 
 ```python
-client = weaviate.connect_to_local()
+def _weaviate_client():
+    return weaviate.connect_to_local(
+        host=os.environ.get("WEAVIATE_HOST", "localhost"),
+        port=int(os.environ.get("WEAVIATE_HTTP_PORT", "8080")),
+        grpc_port=int(os.environ.get("WEAVIATE_GRPC_PORT", "50051")),
+    )
 ```
 
-No host, no port, no API key, no gRPC configuration. `connect_to_local()` from
-`weaviate-client` (pinned at 4.22.0 in [`uv.lock`](../uv.lock), declared as
-`>=4.0.0` in [`pyproject.toml`](../pyproject.toml)) uses its own defaults —
-HTTP on `localhost:8080` and gRPC on `localhost:50051` — and this service
-overrides none of them.
+Both endpoints build their client through this one helper. The defaults match
+`connect_to_local()` from `weaviate-client` (pinned at 4.22.0 in
+[`uv.lock`](../uv.lock), declared as `>=4.0.0` in
+[`pyproject.toml`](../pyproject.toml)): HTTP on `localhost:8080` and gRPC on
+`localhost:50051`. There is still no API key support.
 
 A connection is opened **per request** on `POST /index/message` and `GET /search`,
 and closed in a `finally` block. There is no pooled or long-lived client, and no
@@ -175,11 +184,9 @@ connection is attempted at startup.
 
 **There is no Weaviate service in [`infra/docker-compose.yml`](../../../infra/docker-compose.yml).**
 That file brings up Postgres, Redis, and MinIO only. A Weaviate instance must be
-run separately, and it must be reachable on the loopback defaults above from the
-perspective of the `ai_agent` process — which means a containerised `ai_agent`
-talking to a Weaviate in another container will not connect without host
-networking or a code change, since `localhost` inside the container is the
-container itself.
+run separately. A containerised `ai_agent` talking to a Weaviate in another
+container should set `WEAVIATE_HOST` to that service's name, since `localhost`
+inside the container is the container itself.
 
 ### Failure mode when Weaviate is unreachable
 
